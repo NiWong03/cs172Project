@@ -16,4 +16,15 @@ reddit_instance = praw.Reddit(
     user_agent="clean_crawler by /u/PresentTangelo7958",
 )
 
-print(reddit_instance.user.me())  # Print the username of the authenticated user
+#print(reddit_instance.user.me())  # Print the username of the authenticated user
+subreddit = reddit_instance.subreddit("literature")
+#print(subreddit)  # Print the name of the subreddit
+top_posts = subreddit.top(limit=10)  # Get the top 10 posts from the subreddit
+for post in top_posts:
+    print(f"Title: {post.title}")  # Print the title of each post
+    #print(f"Author: {post.author}")  # Print the author of each post
+    #print(f"Score: {post.score}")  # Print the score of each post
+    #print(f"URL: {post.url}")  # Print the URL of each post
+    #print(f"Created: {post.created_utc}")  # Print the creation time of each post
+    #print(f"Comments: {post.num_comments}")  # Print the number of comments on each post
+    print("-" * 80)  # Separator for readability
