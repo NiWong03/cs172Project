@@ -2,10 +2,10 @@ import praw
 import time, datetime # pytz just for clarity
 import json
 
-username_of_me = "PresentTangelo7958"
-password_of_me = "Valar Morghulis"
-client_id = "wJH5oSZpN6eCUaygK5cH2w"
-client_secret = "NxoJVNdg6q3wrtk2QWUlaBvH4_zhQA"
+username_of_me = ""
+password_of_me = ""
+client_id = ""
+client_secret = ""
 #user_agent = "your_user_agent"
 #subreddit_name = "your_subreddit_name"
 
