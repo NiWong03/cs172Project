@@ -2,7 +2,6 @@ literature
 Historians
 classicliterature
 TrueLit
-GenreLit
 BookCollecting
 BookDiscussion
 BookRecommendations
