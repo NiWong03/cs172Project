@@ -8,7 +8,10 @@ from datetime import datetime
 from prawcore.exceptions import TooManyRequests, ServerError, ResponseException
 
 # -------Config-----
-SUBREDDITS = ["TrueLit"]
+
+with open("subreddits.txt", 'r') as f:  # Corrected file path
+    SUBREDDITS = [line.strip() for line in f if line.strip()] 
+
 POSTS_PER_SUBREDDIT = 1000  # Max posts per subreddit
 MAX_COMMENTS_PER_POST = 50  # Max comments per post
 BATCH_SIZE = 10  # Posts per API call
