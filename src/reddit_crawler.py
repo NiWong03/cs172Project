@@ -8,7 +8,7 @@ from datetime import datetime
 from prawcore.exceptions import TooManyRequests, ServerError, ResponseException
 
 # -------Config-----
-SUBREDDITS = ["TrueLit"]
+SUBREDDITS = ["Reading"]
 POSTS_PER_SUBREDDIT = 1000  # Max posts per subreddit
 MAX_COMMENTS_PER_POST = 50  # Max comments per post
 BATCH_SIZE = 10  # Posts per API call
@@ -48,14 +48,7 @@ reddit_instance = praw.Reddit(
 
 def process_comment(comment):
     """Convert comment to serializable format with nested structure"""
-    return {
-        "id": comment.id,
-        "author": str(comment.author) if comment.author else "[deleted]",
-        "body": comment.body,
-        "score": comment.score,
-        "created_utc": comment.created_utc,
-        "depth": comment.depth,
-        "replies": [process_comment(reply) for reply in comment.replies][:5]  # Max 5 replies per comment
+    return {"id": comment.id,"author": str(comment.author) if comment.author else "[deleted]","body": comment.body,"score": comment.score,"created_utc": comment.created_utc,"depth": comment.depth,"replies": [process_comment(reply) for reply in comment.replies][:5]  # Max 5 replies per comment
     }
 
 def get_post_comments(post):
@@ -127,15 +120,7 @@ def crawl_subreddit(subreddit_name, start_after=None, processed_count=0):
                     continue   # if duplicate, do not crawl skip loop
 
                 post_data = {
-                    "id": post.id,
-                    "title": post.title,
-                    "author": str(post.author),
-                    "created_utc": post.created_utc,
-                    "score": post.score,
-                    "url": post.url,
-                    "num_comments": post.num_comments,
-                    "text": post.selftext,
-                    "comments": get_post_comments(post)
+                    "id": post.id,"title": post.title,"author": str(post.author),"created_utc": post.created_utc,"score": post.score,"url": post.url,"num_comments": post.num_comments,"text": post.selftext,"comments": get_post_comments(post)
                 }
                 batch.append(post_data)
 
@@ -149,15 +134,20 @@ def crawl_subreddit(subreddit_name, start_after=None, processed_count=0):
                 print(f"Current file size exceeded 10 MB. Writing to new file: {filename}")
 
                
-                with open(filename, "w") as f:
-                    json.dump(batch, f, indent=2)  
+                with open(filename, "a") as f:
+                    for item in batch:
+                        json.dump(item, f)
+                        f.write("\n")  
                     
                 existing_data = []
             else:
                 # Save batch to the existing file
                 existing_data.extend(batch)
-                with open(filename, "w") as f:
-                    json.dump(existing_data, f, indent=2)
+                with open(filename, "a") as f:
+                    for item in batch:
+                        json.dump(item, f)
+                        f.write("\n")
+
 
             file_size = os.path.getsize(filename)
             mb = file_size / 1000000 # file size in megabytes
