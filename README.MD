@@ -1,6 +1,10 @@
 # CS172 Project
 
+### How to run:
 
+- ./run.sh
+
+- (if using bash): bash run.sh
 ## Reddit Literature Webcrawler
 
 ## Dependencies:
