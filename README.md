@@ -1,0 +1,3 @@
+- need to have index/ folder inside src
+- need to "pip install flask"
+- to run flask do "python3 app.py"
