@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>Search Results</h1>
+    {% if query %}
+        <p><b>Your query:</b> {{ query }}</p>
+    {% endif %}
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    {% if lucene_output %}
+        <ul>
+            {% for hit in lucene_output %}
+                <li>
+                    <b>Score:</b> {{ hit.score|round(3) }}<br>
+                    <b>Title:</b> {{ hit.title }}<br>
+                    <b>Text:</b> {{ hit.text }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        {% if not error %}
+            <p>No results found.</p>
+        {% endif %}
+    {% endif %}
+
+    <p><a href="{{ url_for('input') }}">Back to Search</a></p>
+</body>
+</html>

@@ -1,3 +1,11 @@
 .env
 venv/
 collections/
+index/
+Ann_crawler.py
+README.MD
+cs172Project_PartA.zip
+run.sh
+src/reddit_crawler.py
+test_crawler.py
+flask_demo.py
