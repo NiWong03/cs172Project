@@ -29,6 +29,15 @@
         {% endif %}
     {% endif %}
 
+    <div style="margin-top: 2em;">
+        {% if page > 1 %}
+            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page-1 }}">Previous</a>
+        {% endif %}
+        {% if num_results == page_size %}
+            {% if page > 1 %} | {% endif %}
+            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page+1 }}">Next</a>
+        {% endif %}
+    </div>
     <p><a href="{{ url_for('input') }}">Back to Search</a></p>
 </body>
 </html>

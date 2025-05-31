@@ -2,6 +2,7 @@
 venv/
 collections/
 index/
+__pycache__/
 Ann_crawler.py
 README.MD
 cs172Project_PartA.zip

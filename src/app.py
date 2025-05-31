@@ -10,14 +10,16 @@ from flask import request, Flask, render_template, redirect, url_for
 
 app = Flask(__name__)
 
-def retrieve(storedir, query):
+def retrieve(storedir, query, page=1, page_size=10):
     searchDir = NIOFSDirectory(Paths.get(storedir))
     searcher = IndexSearcher(DirectoryReader.open(searchDir))
-    parser = QueryParser('text', StandardAnalyzer())  # use the real field name
+    parser = QueryParser('text', StandardAnalyzer())
     parsed_query = parser.parse(query)
-    topDocs = searcher.search(parsed_query, 10).scoreDocs
+    end = page * page_size
+    start = (page - 1) * page_size
+    topDocs = searcher.search(parsed_query, end).scoreDocs
     topkdocs = []
-    for hit in topDocs:
+    for hit in topDocs[start:end]:
         doc = searcher.doc(hit.doc)
         topkdocs.append({
             "score": hit.score,
@@ -39,21 +41,39 @@ def home():
 def input():
     return render_template('input.html')
 
-@app.route('/output', methods=['POST'])
+@app.route('/output', methods=['GET', 'POST'])
 def output():
-    form_data = request.form
-    query = form_data.get('query', '')
+    query = ""
+    page = 1
     results = []
     error = None
+    page_size = 10
+
+    if request.method == 'POST':
+        query = request.form.get('query', '')
+    elif request.method == 'GET':
+        query = request.args.get('query', '')
+        page = int(request.args.get('page', '1'))
+
     if query:
         try:
             lucene.getVMEnv().attachCurrentThread()
-            results = retrieve('./index', query)  # Use your real index path here
+            results = retrieve('./index', query, page=page, page_size=page_size)
         except Exception as e:
             error = f"Error searching index: {e}"
     else:
         error = "Empty query."
-    return render_template('output.html', lucene_output=results, query=query, error=error)
+
+    return render_template(
+        'output.html',
+        lucene_output=results,
+        query=query,
+        error=error,
+        page=page,
+        page_size=page_size,
+        num_results=len(results)
+    )
+
 
 lucene.initVM(vmargs=['-Djava.awt.headless=true'])
 
