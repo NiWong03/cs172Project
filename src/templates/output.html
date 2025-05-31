@@ -45,6 +45,9 @@
                     {% if hit.author %}
                         <b>Author:</b> {{ hit.author }}<br>
                     {% endif %}
+                    {% if hit.id %}
+                        <b>ID:</b> {{ hit.id }}<br>
+                    {% endif %}
                     {% if hit.created_utc %}
                         <b>Date:</b> {{ hit.created_utc }}<br>
                     {% endif %}

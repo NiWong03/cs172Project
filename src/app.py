@@ -29,6 +29,7 @@ def retrieve(storedir, query, page=1, page_size=10):
             "text": doc.get("text"),
             "title": doc.get("title"),
             "author": doc.get("author"),
+            "id": doc.get("id"),
             "created_utc": doc.get("created_utc"),
             "url": doc.get("url"),
             "num_comments": doc.get("num_comments")
