@@ -2,6 +2,23 @@
 <html>
 <head>
     <title>Search Results</title>
+    <style>
+        body { font-family: sans-serif; max-width: 750px; margin: 2em auto; }
+        .result { margin-bottom: 1.5em; border-bottom: 1px solid #ccc; padding-bottom: 1em; }
+        .pagination { margin-top: 1.5em; }
+        .pagination a, .pagination strong {
+            margin: 0 3px; padding: 4px 9px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .pagination a { background: #f0f0f0; color: #0077cc; }
+        .pagination strong {
+            background: #0077cc; color: white; font-weight: bold;
+        }
+        .pagination span.ellipsis {
+            margin: 0 6px; color: #999;
+        }
+    </style>
 </head>
 <body>
     <h1>Search Results</h1>
@@ -13,13 +30,24 @@
         <p style="color: red;">{{ error }}</p>
     {% endif %}
 
+    <p>{{ total_hits }} results found. Page {{ page }} of {{ total_pages }}.</p>
+
     {% if lucene_output %}
         <ul>
             {% for hit in lucene_output %}
-                <li>
-                    <b>Score:</b> {{ hit.score|round(3) }}<br>
+                <li class="result">
                     <b>Title:</b> {{ hit.title }}<br>
-                    <b>Text:</b> {{ hit.text }}
+                    <b>Score:</b> {{ hit.score|round(3) }}<br>
+                    <b>Text:</b> {{ hit.text }}<br>
+                    {% if hit.url %}
+                        <b>URL:</b> <a href="{{ hit.url }}" target="_blank">{{ hit.url }}</a><br>
+                    {% endif %}
+                    {% if hit.author %}
+                        <b>Author:</b> {{ hit.author }}<br>
+                    {% endif %}
+                    {% if hit.created_utc %}
+                        <b>Date:</b> {{ hit.created_utc }}<br>
+                    {% endif %}
                 </li>
             {% endfor %}
         </ul>
@@ -29,15 +57,46 @@
         {% endif %}
     {% endif %}
 
-    <div style="margin-top: 2em;">
-        {% if page > 1 %}
-            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page-1 }}">Previous</a>
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {# Page window: show up to 5 pages around current page #}
+        {% set window = 2 %}
+        {% set start_page = page - window if page - window > 1 else 1 %}
+        {% set end_page = page + window if page + window < total_pages else total_pages %}
+        {# Always show first page #}
+        {% if start_page > 1 %}
+            <a href="{{ url_for('output') }}?query={{ query }}&page=1">1</a>
+            {% if start_page > 2 %}
+                <span class="ellipsis">…</span>
+            {% endif %}
         {% endif %}
-        {% if num_results == page_size %}
-            {% if page > 1 %} | {% endif %}
-            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page+1 }}">Next</a>
+        {# Main page links #}
+        {% for p in range(start_page, end_page+1) %}
+            {% if p == page %}
+                <strong>{{ p }}</strong>
+            {% else %}
+                <a href="{{ url_for('output') }}?query={{ query }}&page={{ p }}">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+        {# Always show last page #}
+        {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+                <span class="ellipsis">…</span>
+            {% endif %}
+            <a href="{{ url_for('output') }}?query={{ query }}&page={{ total_pages }}">{{ total_pages }}</a>
+        {% endif %}
+
+        <br>
+        {# Previous/Next #}
+        {% if page > 1 %}
+            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page-1 }}">&#8592; Previous</a>
+        {% endif %}
+        {% if page < total_pages %}
+            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page+1 }}">Next &#8594;</a>
         {% endif %}
     </div>
+    {% endif %}
+
     <p><a href="{{ url_for('input') }}">Back to Search</a></p>
 </body>
 </html>

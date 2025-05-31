@@ -15,13 +15,16 @@ def retrieve(storedir, query, page=1, page_size=10):
     searcher = IndexSearcher(DirectoryReader.open(searchDir))
     parser = QueryParser('text', StandardAnalyzer())
     parsed_query = parser.parse(query)
-    end = page * page_size
+    # Get enough docs to know the total count
+    topDocs = searcher.search(parsed_query, page * page_size + 1000)  # Fetch a big enough window
+    total_hits = topDocs.totalHits.value
+    scoreDocs = topDocs.scoreDocs
     start = (page - 1) * page_size
-    topDocs = searcher.search(parsed_query, end).scoreDocs
-    topkdocs = []
-    for hit in topDocs[start:end]:
+    end = start + page_size
+    hits = []
+    for hit in scoreDocs[start:end]:
         doc = searcher.doc(hit.doc)
-        topkdocs.append({
+        hits.append({
             "score": hit.score,
             "text": doc.get("text"),
             "title": doc.get("title"),
@@ -30,8 +33,7 @@ def retrieve(storedir, query, page=1, page_size=10):
             "url": doc.get("url"),
             "num_comments": doc.get("num_comments")
         })
-    return topkdocs
-
+    return hits, total_hits
 
 @app.route("/")
 def home():
@@ -48,6 +50,7 @@ def output():
     results = []
     error = None
     page_size = 10
+    total_hits = 0
 
     if request.method == 'POST':
         query = request.form.get('query', '')
@@ -58,11 +61,13 @@ def output():
     if query:
         try:
             lucene.getVMEnv().attachCurrentThread()
-            results = retrieve('./index', query, page=page, page_size=page_size)
+            results, total_hits = retrieve('./index', query, page=page, page_size=page_size)
         except Exception as e:
             error = f"Error searching index: {e}"
     else:
         error = "Empty query."
+
+    total_pages = (total_hits + page_size - 1) // page_size  # round up
 
     return render_template(
         'output.html',
@@ -71,7 +76,8 @@ def output():
         error=error,
         page=page,
         page_size=page_size,
-        num_results=len(results)
+        total_hits=total_hits,
+        total_pages=total_pages
     )
 
 
