@@ -1,5 +1,6 @@
 import lucene
 import os
+from datetime import datetime
 from org.apache.lucene.store import NIOFSDirectory
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
@@ -24,27 +25,27 @@ def retrieve(storedir, query, page=1, page_size=10):
     hits = []
     for hit in scoreDocs[start:end]:
         doc = searcher.doc(hit.doc)
+        # Convert created_utc timestamp to readable date string
+        created_raw = doc.get("created_utc")
+        if created_raw:
+            try:
+                dt = datetime.utcfromtimestamp(float(created_raw))
+                created_str = dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+            except Exception:
+                created_str = created_raw  # fallback if parsing fails
+        else:
+            created_str = ""
         hits.append({
             "score": hit.score,
             "text": doc.get("text"),
             "title": doc.get("title"),
             "author": doc.get("author"),
             "id": doc.get("id"),
-            "created_utc": doc.get("created_utc"),
+            "created_utc": created_str,
             "url": doc.get("url"),
             "num_comments": doc.get("num_comments")
         })
-    seen_ids = set()
-    unique_hits = []
-
-    for hit in hits:  # hits is your list of dicts
-        if hit["id"] not in seen_ids:
-            unique_hits.append(hit)
-            seen_ids.add(hit["id"])
-
-    # unique_hits now contains no duplicates based on "id"
-    total_hits = len(unique_hits)
-    return unique_hits, total_hits
+    return hits, total_hits
 
 @app.route("/")
 def home():

@@ -70,8 +70,7 @@ button:hover {
     box-shadow: 0 4px 16px rgba(0,119,255,0.10), 0 1.5px 0.5px rgba(0,119,255,0.10) inset;
 }
 
-/* Dark theme */
-body.dark-theme {
+body.reddit-theme {
     --bg: #181c24;
     --fg: #e6eaf3;
     --input-bg: #232a36;
