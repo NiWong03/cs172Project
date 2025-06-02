@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Search Engine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+</head>
+<body>
+    <h1>Search</h1>
+    <input type="text" id="query" class="search-bar-theme" placeholder="Type your search..." style="width: 80%;" />
+    <button onclick="doSearch()">Search</button>
+    <div id="results"></div>
+
+    <script>
+        function doSearch() {
+            const query = document.getElementById('query').value;
+            fetch(`/search?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(results => {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = '';
+                    if (results.length === 0) {
+                        resultsDiv.innerHTML = '<p>No results.</p>';
+                    } else {
+                        results.forEach(item => {
+                            const el = document.createElement('div');
+                            el.className = 'result';
+                            el.innerHTML = `<strong>${item.title}</strong><br><span>${item.snippet}</span>`;
+                            resultsDiv.appendChild(el);
+                        });
+                    }
+                });
+        }
+        document.getElementById('query').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearch();
+        });
+    </script>
+</body>
+</html>

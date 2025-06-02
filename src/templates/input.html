@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <style>
+        .center-search {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2em;
+        }
+        .center-search input[type="text"] {
+            width: 350px;
+            max-width: 90vw;
+            text-align: center;
+        }
+        .center-search input[type="submit"] {
+            margin-top: 1em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lucene Search Demo</h1>
+    <div class="center-search">
+        <form action="/output" method="GET">
+            <input type="text" name="query" class="search-bar-theme" placeholder="Type Here..." required autofocus />
+            <input type="submit" value="Search" />
+        </form>
+    </div>
+</body>
+</html>

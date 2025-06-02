@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+</head>
+<body>
+    <div class="results-container">
+        <p style="text-align:center;"><a href="{{ url_for('input') }}">Back to Search</a></p>
+        <div class="results-header">
+            <h1>Search Results</h1>
+            {% if query %}
+                <p><b>Your query:</b> {{ query }}</p>
+            {% endif %}
+            {% if error %}
+                <p style="color: red;">{{ error }}</p>
+            {% endif %}
+            <p>{{ total_hits }} results found. Page {{ page }} of {{ total_pages }}.</p>
+        </div>
+        {% if lucene_output %}
+            {% for hit in lucene_output %}
+                {% if hit.url %}
+                    <a class="result-card" href="{{ hit.url }}" target="_blank">
+                        <div class="result-title">{{ hit.title }}</div>
+                        <div class="result-meta">
+                            {% if hit.author %}<span>by {{ hit.author }}</span>{% endif %}
+                            {% if hit.created_utc %}<span> | UTC: {{ hit.created_utc }}</span>{% endif %}
+                            <span> | Score: {{ hit.score|round(3) }}</span>
+                        </div>
+                        <div class="result-snippet">
+                            {% set words = hit.text.split() %}
+                            {% if words|length > 20 %}
+                                {{ words[:20]|join(' ') }}...
+                            {% else %}
+                                {{ hit.text }}
+                            {% endif %}
+                        </div>
+                    </a>
+                {% else %}
+                    <div class="result-card">
+                        <div class="result-title">{{ hit.title }}</div>
+                        <div class="result-meta">
+                            {% if hit.author %}<span>by {{ hit.author }}</span>{% endif %}
+                            {% if hit.created_utc %}<span> | {{ hit.created_utc }}</span>{% endif %}
+                            <span> | Score: {{ hit.score|round(3) }}</span>
+                        </div>
+                        <div class="result-snippet">
+                            {% set words = hit.text.split() %}
+                            {% if words|length > 20 %}
+                                {{ words[:20]|join(' ') }}...
+                            {% else %}
+                                {{ hit.text }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {% if not error %}
+                <p>No results found.</p>
+            {% endif %}
+        {% endif %}
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {# Page window: show up to 5 pages around current page #}
+            {% set window = 2 %}
+            {% set start_page = page - window if page - window > 1 else 1 %}
+            {% set end_page = page + window if page + window < total_pages else total_pages %}
+            {# Always show first page #}
+            {% if start_page > 1 %}
+                <a href="{{ url_for('output') }}?query={{ query }}&page=1">1</a>
+                {% if start_page > 2 %}
+                    <span class="ellipsis">…</span>
+                {% endif %}
+            {% endif %}
+            {# Main page links #}
+            {% for p in range(start_page, end_page+1) %}
+                {% if p == page %}
+                    <strong>{{ p }}</strong>
+                {% else %}
+                    <a href="{{ url_for('output') }}?query={{ query }}&page={{ p }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {# Always show last page #}
+            {% if end_page < total_pages %}
+                {% if end_page < total_pages - 1 %}
+                    <span class="ellipsis">…</span>
+                {% endif %}
+                <a href="{{ url_for('output') }}?query={{ query }}&page={{ total_pages }}">{{ total_pages }}</a>
+            {% endif %}
+            <br>
+            {# Previous/Next #}
+            {% if page > 1 %}
+                <a href="{{ url_for('output') }}?query={{ query }}&page={{ page-1 }}">&#8592; Previous</a>
+            {% endif %}
+            {% if page < total_pages %}
+                <a href="{{ url_for('output') }}?query={{ query }}&page={{ page+1 }}">Next &#8594;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        <p style="text-align:center;"><a href="{{ url_for('input') }}">Back to Search</a></p>
+    </div>
+</body>
+</html>
