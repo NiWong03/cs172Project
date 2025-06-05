@@ -8,27 +8,43 @@ from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.search import IndexSearcher
 from flask import request, Flask, render_template, redirect, url_for
+from org.apache.lucene.search import BooleanQuery, BooleanClause, TermQuery
+from org.apache.lucene.index import Term
 
 app = Flask(__name__)
 def retrieve(storedir, query, author='', docid='', page=1, page_size=10):
     from org.apache.lucene.search import BooleanQuery, BooleanClause, TermQuery
     from org.apache.lucene.index import Term
+    from org.apache.lucene.queryparser.classic import QueryParser
+    from org.apache.lucene.analysis.standard import StandardAnalyzer
 
     searchDir = NIOFSDirectory(Paths.get(storedir))
     searcher = IndexSearcher(DirectoryReader.open(searchDir))
 
     parser = QueryParser('text', StandardAnalyzer())
-    main_query = parser.parse(query) if query else None
-
     boolean_query = BooleanQuery.Builder()
-    if main_query:
-        boolean_query.add(main_query, BooleanClause.Occur.MUST)
-    if author:
-        boolean_query.add(TermQuery(Term("author", author)), BooleanClause.Occur.MUST)
-    if docid:
-        boolean_query.add(TermQuery(Term("id", docid)), BooleanClause.Occur.MUST)
+    num_should = 0
 
-    final_query = boolean_query.build() if (main_query or author or docid) else parser.parse("*:*")
+    # Free-text
+    if query:
+        main_query = parser.parse(query)
+        boolean_query.add(main_query, BooleanClause.Occur.SHOULD)
+        num_should += 1
+
+    # Author
+    if author:
+        boolean_query.add(TermQuery(Term("author", author)), BooleanClause.Occur.SHOULD)
+        num_should += 1
+
+    # ID
+    if docid:
+        boolean_query.add(TermQuery(Term("id", docid)), BooleanClause.Occur.SHOULD)
+        num_should += 1
+
+    if num_should > 0:
+        final_query = boolean_query.build()
+    else:
+        final_query = parser.parse("*:*")  # match all
 
     # Get enough docs to know the total count
     topDocs = searcher.search(final_query, page * page_size + 1000)
@@ -42,6 +58,7 @@ def retrieve(storedir, query, author='', docid='', page=1, page_size=10):
         created_raw = doc.get("created_utc")
         if created_raw:
             try:
+                from datetime import datetime
                 dt = datetime.utcfromtimestamp(float(created_raw))
                 created_str = dt.strftime('%Y-%m-%d %H:%M:%S UTC')
             except Exception:
