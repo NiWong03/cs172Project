@@ -18,13 +18,35 @@
         .pagination span.ellipsis {
             margin: 0 6px; color: #999;
         }
+        .search-form input[type="text"] {
+            width: 220px;
+            margin-right: 6px;
+        }
+        .search-form {
+            margin-bottom: 1.5em;
+            padding: 1em;
+            background: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #e2e2e2;
+        }
     </style>
 </head>
 <body>
     <h1>Search Results</h1>
-    {% if query %}
-        <p><b>Your query:</b> {{ query }}</p>
-    {% endif %}
+    
+    <!-- Search form (always at top) -->
+    <form class="search-form" action="{{ url_for('output') }}" method="get">
+        <label>Query:
+            <input type="text" name="query" value="{{ query|default('') }}" autofocus />
+        </label>
+        <label>Author:
+            <input type="text" name="author" value="{{ author|default('') }}" />
+        </label>
+        <label>ID:
+            <input type="text" name="id" value="{{ id|default('') }}" />
+        </label>
+        <input type="submit" value="Search" />
+    </form>
 
     {% if error %}
         <p style="color: red;">{{ error }}</p>
@@ -68,7 +90,7 @@
         {% set end_page = page + window if page + window < total_pages else total_pages %}
         {# Always show first page #}
         {% if start_page > 1 %}
-            <a href="{{ url_for('output') }}?query={{ query }}&page=1">1</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page=1">1</a>
             {% if start_page > 2 %}
                 <span class="ellipsis">…</span>
             {% endif %}
@@ -78,7 +100,7 @@
             {% if p == page %}
                 <strong>{{ p }}</strong>
             {% else %}
-                <a href="{{ url_for('output') }}?query={{ query }}&page={{ p }}">{{ p }}</a>
+                <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ p }}">{{ p }}</a>
             {% endif %}
         {% endfor %}
         {# Always show last page #}
@@ -86,20 +108,20 @@
             {% if end_page < total_pages - 1 %}
                 <span class="ellipsis">…</span>
             {% endif %}
-            <a href="{{ url_for('output') }}?query={{ query }}&page={{ total_pages }}">{{ total_pages }}</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ total_pages }}">{{ total_pages }}</a>
         {% endif %}
 
         <br>
         {# Previous/Next #}
         {% if page > 1 %}
-            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page-1 }}">&#8592; Previous</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ page-1 }}">&#8592; Previous</a>
         {% endif %}
         {% if page < total_pages %}
-            <a href="{{ url_for('output') }}?query={{ query }}&page={{ page+1 }}">Next &#8594;</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ page+1 }}">Next &#8594;</a>
         {% endif %}
     </div>
     {% endif %}
 
-    <p><a href="{{ url_for('input') }}">Back to Search</a></p>
+    <p><a href="{{ url_for('input') }}">Back to Simple Search</a></p>
 </body>
 </html>
