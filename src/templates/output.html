@@ -48,7 +48,7 @@
         <label>Ranking:
             <select name="rank">
                 <option value="default" {% if rank=='default' %}selected{% endif %}>Default (BM25)</option>
-                <option value="fuzzy"   {% if rank=='fuzzy'   %}selected{% endif %}>Fuzzy</option>
+                <option value="custom"   {% if rank=='custom'   %}selected{% endif %}>Custom</option>
             </select>
         </label>
         <input type="submit" value="Search" />
@@ -96,7 +96,7 @@
         {% set end_page = page + window if page + window < total_pages else total_pages %}
         {# Always show first page #}
         {% if start_page > 1 %}
-            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page=1">1</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page=1">1</a>
             {% if start_page > 2 %}
                 <span class="ellipsis">…</span>
             {% endif %}
@@ -106,7 +106,7 @@
             {% if p == page %}
                 <strong>{{ p }}</strong>
             {% else %}
-                <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ p }}">{{ p }}</a>
+                <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ p }}">{{ p }}</a>
             {% endif %}
         {% endfor %}
         {# Always show last page #}
@@ -114,16 +114,16 @@
             {% if end_page < total_pages - 1 %}
                 <span class="ellipsis">…</span>
             {% endif %}
-            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ total_pages }}">{{ total_pages }}</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ total_pages }}">{{ total_pages }}</a>
         {% endif %}
 
         <br>
         {# Previous/Next #}
         {% if page > 1 %}
-            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ page-1 }}">&#8592; Previous</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ page-1 }}">&#8592; Previous</a>
         {% endif %}
         {% if page < total_pages %}
-            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&page={{ page+1 }}">Next &#8594;</a>
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ page+1 }}">Next &#8594;</a>
         {% endif %}
     </div>
     {% endif %}

@@ -16,120 +16,90 @@ from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 
 app = Flask(__name__)
-def retrieve(
-        storedir: str,
-        query: str,
-        author: str = "",
-        docid: str = "",
-        *,
-        page: int = 1,
-        page_size: int = 10,
-        fuzzy: bool = False
-    ):
+def retrieve(storedir, query, author='', docid='',
+             *, page=1, page_size=10, rank_mode='default'):
     """
-    Search the Lucene index in *storedir*.
-    A document is returned if it matches   query  OR  author  OR  id.
-
-    Parameters
-    ----------
-    storedir   : path to index directory
-    query      : free-text query (can be empty)
-    author     : exact author string   (optional)
-    docid      : exact post-id string  (optional)
-    page       : 1-based page number
-    page_size  : hits per page
-    fuzzy      : if True → each token in *query* is matched with FuzzyQuery(edit≤1)
-
-    Returns
-    -------
-    hits         : list[dict]  (only for the requested page)
-    total_hits   : int         (matching docs overall)
+    rank_mode = 'default'  ->  BM25, exact text match
+               = 'custom'   ->  fuzzy tokens OR-ed on title/text,
+                                title hits get boost 3.0
     """
-    # ---------------- Lucene boiler-plate ----------------
     from org.apache.lucene.store import NIOFSDirectory
     from java.nio.file import Paths
     from org.apache.lucene.index import DirectoryReader, Term
     from org.apache.lucene.search import (
         IndexSearcher, BooleanQuery, BooleanClause,
-        TermQuery, FuzzyQuery
+        TermQuery, FuzzyQuery, BoostQuery
     )
     from org.apache.lucene.queryparser.classic import QueryParser
     from org.apache.lucene.analysis.standard import StandardAnalyzer
+    from datetime import datetime
 
     searchDir = NIOFSDirectory(Paths.get(storedir))
     searcher  = IndexSearcher(DirectoryReader.open(searchDir))
 
-    # -------------- build BooleanQuery (OR) --------------
     builder      = BooleanQuery.Builder()
-    should_count = 0
+    should_cnt   = 0
 
-    # free-text part
+    # ───────────────────────────────────────── text part
     if query:
-        if fuzzy:
-            # one FuzzyQuery per token
+        if rank_mode == 'custom':                           # fuzzy + boosting
             for tok in query.split():
+                # fuzzy on title (boost ×3)
+                builder.add(
+                    BoostQuery(FuzzyQuery(Term("title", tok), maxEdits=1), 3.0),
+                    BooleanClause.Occur.SHOULD)
+                should_cnt += 1
+                # fuzzy on text (no extra boost)
                 builder.add(
                     FuzzyQuery(Term("text", tok), maxEdits=1),
-                    BooleanClause.Occur.SHOULD
-                )
-                should_count += 1
-        else:
+                    BooleanClause.Occur.SHOULD)
+                should_cnt += 1
+        else:                                               # default BM25
             parser = QueryParser("text", StandardAnalyzer())
             builder.add(parser.parse(query), BooleanClause.Occur.SHOULD)
-            should_count += 1
+            should_cnt += 1
 
-    # author / id (exact)
+    # ───────────────────────────────────────── author / id
     if author:
         builder.add(TermQuery(Term("author", author)), BooleanClause.Occur.SHOULD)
-        should_count += 1
+        should_cnt += 1
     if docid:
         builder.add(TermQuery(Term("id", docid)),     BooleanClause.Occur.SHOULD)
-        should_count += 1
+        should_cnt += 1
 
-    # default to match-all if no criteria supplied
-    if should_count:
-        final_query = builder.build()
+    # fall-back match-all if user left everything blank
+    if should_cnt:
+        final_q = builder.build()
     else:
-        parser = QueryParser("text", StandardAnalyzer())
-        final_query = parser.parse("*:*")
+        final_q = QueryParser("text", StandardAnalyzer()).parse("*:*")
 
-    # ---------------- execute search ---------------------
-    topDocs    = searcher.search(final_query, page * page_size + 1000)
+    # ───────────────────────────────────────── search + paging
+    topDocs    = searcher.search(final_q, page * page_size + 1000)
     total_hits = topDocs.totalHits.value
     scoreDocs  = topDocs.scoreDocs
+    start, end = (page-1)*page_size, (page-1)*page_size + page_size
 
-    start = (page - 1) * page_size
-    end   = start + page_size
-
-    # -------------- collect hits for this page ----------
-    from datetime import datetime
     hits = []
     for hit in scoreDocs[start:end]:
         doc = searcher.doc(hit.doc)
-
-        raw_time = doc.get("created_utc")
-        if raw_time:
+        # prettify timestamp
+        raw = doc.get("created_utc")
+        if raw:
             try:
-                dt   = datetime.utcfromtimestamp(float(raw_time))
-                cstr = dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+                raw = datetime.utcfromtimestamp(float(raw)).strftime('%Y-%m-%d %H:%M:%S UTC')
             except Exception:
-                cstr = raw_time
-        else:
-            cstr = ""
-
+                pass
         hits.append({
-            "score"        : hit.score,
-            "title"        : doc.get("title"),
-            "text"         : doc.get("text"),
-            "author"       : doc.get("author"),
-            "id"           : doc.get("id"),
-            "created_utc"  : cstr,
-            "url"          : doc.get("url"),
-            "num_comments" : doc.get("num_comments")
+            "score"       : hit.score,
+            "title"       : doc.get("title"),
+            "text"        : doc.get("text"),
+            "author"      : doc.get("author"),
+            "id"          : doc.get("id"),
+            "created_utc" : raw or "",
+            "url"         : doc.get("url"),
+            "num_comments": doc.get("num_comments")
         })
-
     return hits, total_hits
-
 
 
 @app.route("/")
@@ -176,12 +146,10 @@ def output():
 
             results, total_hits = retrieve(
                 './index',
-                query,
-                author,
-                docid,
-                page        = page,
-                page_size   = page_size,
-                fuzzy       = (rank == 'fuzzy')    # <- toggle
+                query, author, docid,
+                page       = page,
+                page_size  = page_size,
+                rank_mode  = rank           # <── pass through
             )
         except Exception as e:
             error = f"Error searching index: {e}"
