@@ -10,6 +10,13 @@
         <p>Author: <input type="text" name="author" /></p>
         <p>ID: <input type="text" name="id" /></p>
         <p><input type="submit" value="Search" /></p>
+        <label>Ranking:
+            <select name="rank">
+                <option value="default">Default (BM25)</option>
+                <option value="fuzzy">Fuzzy</option>
+            </select>
+        </label>
+        <input type="submit" value="Search" />
     </form>
 </body>
 </html>

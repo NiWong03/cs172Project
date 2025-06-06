@@ -45,6 +45,12 @@
         <label>ID:
             <input type="text" name="id" value="{{ id|default('') }}" />
         </label>
+        <label>Ranking:
+            <select name="rank">
+                <option value="default" {% if rank=='default' %}selected{% endif %}>Default (BM25)</option>
+                <option value="fuzzy"   {% if rank=='fuzzy'   %}selected{% endif %}>Fuzzy</option>
+            </select>
+        </label>
         <input type="submit" value="Search" />
     </form>
 
