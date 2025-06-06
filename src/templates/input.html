@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Search</title>
+    <title>Advanced Search</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/reddit-theme.css') }}">
     <style>
         .center-search {
@@ -23,11 +23,18 @@
 </head>
 <body>
     <h1>Lucene Search Demo</h1>
-    <div class="center-search">
-        <form action="/output" method="GET">
-            <input type="text" name="query" class="search-bar-theme" placeholder="Type Here..." required autofocus />
-            <input type="submit" value="Search" />
-        </form>
-    </div>
+    <form action="/output" method="GET">
+        <p>Query: <input type="text" name="query" autofocus /></p>
+        <p>Author: <input type="text" name="author" /></p>
+        <p>ID: <input type="text" name="id" /></p>
+        <p><input type="submit" value="Search" /></p>
+        <label>Ranking:
+            <select name="rank">
+                <option value="default" {% if rank=='default' %}selected{% endif %}>Default (BM25)</option>
+                <option value="custom"  {% if rank=='custom'  %}selected{% endif %}>Custom (Fuzzy + Multi-field + Title Boost)</option>
+            </select>
+        </label>
+        <input type="submit" value="Search" />
+    </form>
 </body>
 </html>

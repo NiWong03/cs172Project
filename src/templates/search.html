@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <title>Simple Search Engine</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/reddit-theme.css') }}">
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2em auto; }
+        #results { margin-top: 2em; }
+        .result { margin-bottom: 1.5em; border-bottom: 1px solid #ccc; padding-bottom: 1em; }
+    </style>
 </head>
 <body>
     <h1>Search</h1>
-    <input type="text" id="query" class="search-bar-theme" placeholder="Type your search..." style="width: 80%;" />
+    <input type="text" id="query" placeholder="Type your search..." style="width: 80%;" />
     <button onclick="doSearch()">Search</button>
     <div id="results"></div>
 
