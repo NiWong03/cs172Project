@@ -1,0 +1,86 @@
+/* Output page styles */
+.results-container {
+    max-width: 800px;
+    margin: 2em auto;
+    padding: 1em;
+}
+.result-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(255,106,54,0.06);
+    margin-bottom: 1.5em;
+    padding: 1.2em 1.5em 1.2em 2.5em;
+    border: 1.5px solid #ff6a36;
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    position: relative;
+}
+.result-card:hover {
+    box-shadow: 0 6px 24px rgba(255, 69, 0, 0.18);
+    border-color: #ff4500;
+    background: #fff3ed;
+    text-decoration: none;
+}
+.result-title {
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    color: #ff4500;
+    font-size: 1.2em;
+}
+.result-meta {
+    color: #ff6a36;
+    margin-bottom: 0.5em;
+    font-size: 0.95em;
+}
+.result-snippet {
+    margin-bottom: 1em;
+}
+/* Reddit upvote arrow for result cards */
+.result-card::before {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 1em;
+    top: 1.5em;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 18px solid #ff4500;
+    margin-bottom: 8px;
+}
+.results-header {
+    text-align: center;
+    margin-bottom: 2em;
+}
+.pagination {
+    margin-top: 1.5em;
+}
+.pagination a, .pagination strong {
+    margin: 0 3px;
+    padding: 4px 9px;
+    text-decoration: none;
+    border-radius: 4px;
+}
+.pagination a {
+    background: #232a36;
+    color: #4ca3ff;
+}
+.pagination strong {
+    background: #4ca3ff;
+    color: #181c24;
+    font-weight: bold;
+}
+.pagination span.ellipsis {
+    margin: 0 6px;
+    color: #999;
+}
+a {
+    color: #4ca3ff;
+}
+a:hover {
+    color: #82cfff;
+} 

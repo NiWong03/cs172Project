@@ -1,0 +1,120 @@
+body {
+    background: #f6f7f8;
+    color: #1a1a1b;
+    font-family: 'Verdana', 'Arial', sans-serif;
+    max-width: 750px;
+    margin: 2em auto;
+}
+h1, h2, h3, h4, h5, h6 {
+    color: #ff4500;
+    font-family: 'Verdana', 'Arial', sans-serif;
+}
+input, button, select, textarea {
+    background: #fff;
+    color: #1a1a1b;
+    border: 1.5px solid #ff6a36;
+    border-radius: 8px;
+    padding: 0.5em 1em;
+    margin: 0.5em 0;
+    font-size: 1em;
+}
+input:focus, button:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #ff6a36;
+    box-shadow: 0 0 0 2px #ff6a3655;
+}
+button, input[type="submit"] {
+    background: linear-gradient(90deg, #ff6a36 0%, #ff4500 100%);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+button:hover, input[type="submit"]:hover {
+    background: linear-gradient(90deg, #ffb380 0%, #ff6a36 100%);
+    box-shadow: 0 4px 16px rgba(255,106,54,0.18);
+}
+.result-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(255,106,54,0.06);
+    margin-bottom: 1.5em;
+    padding: 1.2em 1.5em 1.2em 2.5em;
+    border: 1.5px solid #ff6a36;
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    position: relative;
+}
+.result-card:hover {
+    box-shadow: 0 6px 24px rgba(255, 69, 0, 0.18);
+    border-color: #ff4500;
+    background: #fff3ed;
+    text-decoration: none;
+}
+.result-title {
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    color: #ff4500;
+    font-size: 1.2em;
+}
+.result-meta {
+    color: #ff6a36;
+    margin-bottom: 0.5em;
+    font-size: 0.95em;
+}
+.result-snippet {
+    margin-bottom: 1em;
+}
+.results-header {
+    text-align: center;
+    margin-bottom: 2em;
+}
+.pagination {
+    margin-top: 1.5em;
+}
+.pagination a, .pagination strong {
+    margin: 0 3px;
+    padding: 4px 9px;
+    text-decoration: none;
+    border-radius: 4px;
+}
+.pagination a {
+    background: #fff;
+    color: #ff6a36;
+    border: 1px solid #ff6a36;
+}
+.pagination strong {
+    background: #ff6a36;
+    color: #fff;
+    font-weight: bold;
+}
+.pagination span.ellipsis {
+    margin: 0 6px;
+    color: #ffb380;
+}
+a {
+    color: #ff4500;
+    transition: color 0.2s;
+}
+a:hover {
+    color: #ff6a36;
+}
+/* Reddit upvote arrow for result cards */
+.result-card::before {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 1em;
+    top: 1.5em;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 18px solid #ff4500;
+    margin-bottom: 8px;
+} 

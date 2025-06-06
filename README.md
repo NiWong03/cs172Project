@@ -1,0 +1,7 @@
+- need to have index/ folder inside src
+- need to "pip install flask"
+- to run flask:
+    - 1: cd into the src/ folder
+    - 2: run "python3 app.py"
+- to see the web page:
+    - manually type/paste 127.0.0.1:5000 into the browser/preview
