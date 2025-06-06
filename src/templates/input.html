@@ -12,12 +12,8 @@
         <p><input type="submit" value="Search" /></p>
         <label>Ranking:
             <select name="rank">
-                <option value="default" {% if rank=='default' %}selected{% endif %}>
-                    Default (BM25)
-                </option>
-                <option value="custom"  {% if rank=='custom'  %}selected{% endif %}>
-                    Custom (Fuzzy + Title boost)
-                </option>
+                <option value="default" {% if rank=='default' %}selected{% endif %}>Default (BM25)</option>
+                <option value="custom"  {% if rank=='custom'  %}selected{% endif %}>Custom (Fuzzy + Multi-field + Title Boost)</option>
             </select>
         </label>
         <input type="submit" value="Search" />

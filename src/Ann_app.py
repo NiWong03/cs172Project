@@ -10,7 +10,7 @@ from org.apache.lucene.search import IndexSearcher
 from flask import request, Flask, render_template, redirect, url_for
 from org.apache.lucene.search import BooleanQuery, BooleanClause, TermQuery
 from org.apache.lucene.index import Term
-from org.apache.lucene.search import BooleanQuery, BooleanClause, TermQuery, FuzzyQuery
+from org.apache.lucene.search import FuzzyQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.analysis.standard import StandardAnalyzer
@@ -42,36 +42,47 @@ def retrieve(storedir, query, author='', docid='',
 
     # ───────────────────────────────────────── text part
     if query:
-        if rank_mode == 'custom':                           # fuzzy + boosting
+        if rank_mode == 'custom':
+            # Fuzzy + multi-field + title boosting
             for tok in query.split():
-                # fuzzy on title (boost ×3)
                 builder.add(
                     BoostQuery(FuzzyQuery(Term("title", tok), maxEdits=1), 3.0),
                     BooleanClause.Occur.SHOULD)
                 should_cnt += 1
-                # fuzzy on text (no extra boost)
                 builder.add(
                     FuzzyQuery(Term("text", tok), maxEdits=1),
                     BooleanClause.Occur.SHOULD)
                 should_cnt += 1
-        else:                                               # default BM25
+        elif rank_mode == 'fuzzy':
+            # (Optional: leave this out if only supporting 'custom' for fuzzy)
+            for tok in query.split():
+                builder.add(
+                    FuzzyQuery(Term("title", tok), maxEdits=1),
+                    BooleanClause.Occur.SHOULD)
+                should_cnt += 1
+                builder.add(
+                    FuzzyQuery(Term("text", tok), maxEdits=1),
+                    BooleanClause.Occur.SHOULD)
+                should_cnt += 1
+        else:
             parser = QueryParser("text", StandardAnalyzer())
             builder.add(parser.parse(query), BooleanClause.Occur.SHOULD)
             should_cnt += 1
 
-    # ───────────────────────────────────────── author / id
-    if author:
-        builder.add(TermQuery(Term("author", author)), BooleanClause.Occur.SHOULD)
-        should_cnt += 1
-    if docid:
-        builder.add(TermQuery(Term("id", docid)),     BooleanClause.Occur.SHOULD)
-        should_cnt += 1
 
-    # fall-back match-all if user left everything blank
-    if should_cnt:
-        final_q = builder.build()
-    else:
-        final_q = QueryParser("text", StandardAnalyzer()).parse("*:*")
+        # ───────────────────────────────────────── author / id
+        if author:
+            builder.add(TermQuery(Term("author", author)), BooleanClause.Occur.SHOULD)
+            should_cnt += 1
+        if docid:
+            builder.add(TermQuery(Term("id", docid)),     BooleanClause.Occur.SHOULD)
+            should_cnt += 1
+
+        # fall-back match-all if user left everything blank
+        if should_cnt:
+            final_q = builder.build()
+        else:
+            final_q = QueryParser("text", StandardAnalyzer()).parse("*:*")
 
     # ───────────────────────────────────────── search + paging
     topDocs    = searcher.search(final_q, page * page_size + 1000)
