@@ -20,16 +20,34 @@
         .pagination span.ellipsis {
             margin: 0 6px; color: #999;
         }
-        .search-form input[type="text"] {
-            width: 220px;
-            margin-right: 6px;
-        }
         .search-form {
-            margin-bottom: 1.5em;
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            gap: 0.7em 1em;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto 1.5em auto;
             padding: 1em;
             background: #f8f8f8;
             border-radius: 8px;
             border: 1px solid #e2e2e2;
+        }
+        .form-row {
+            display: contents; /* allows grid to treat children as grid items */
+        }
+        .search-form label {
+            justify-self: end;
+            font-weight: bold;
+        }
+        .search-form input[type="text"],
+        .search-form select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .search-form input[type="submit"] {
+            grid-column: 1 / span 2;
+            justify-self: center;
+            margin-top: 0.5em;
         }
     </style>
 </head>
@@ -38,22 +56,28 @@
     
     <!-- Search form (always at top) -->
     <form class="search-form" action="{{ url_for('output') }}" method="get">
-        <label>Query:
-            <input type="text" name="query" value="{{ query|default('') }}" autofocus />
-        </label>
-        <label>Author:
-            <input type="text" name="author" value="{{ author|default('') }}" />
-        </label>
-        <label>ID:
-            <input type="text" name="id" value="{{ id|default('') }}" />
-        </label>
-        <label>Ranking:
-            <select name="rank">
+        <div class="form-row">
+            <label for="query">Query:</label>
+            <input type="text" id="query" name="query" value="{{ query|default('') }}" autofocus />
+        </div>
+        <div class="form-row">
+            <label for="author">Author:</label>
+            <input type="text" id="author" name="author" value="{{ author|default('') }}" />
+        </div>
+        <div class="form-row">
+            <label for="id">ID:</label>
+            <input type="text" id="id" name="id" value="{{ id|default('') }}" />
+        </div>
+        <div class="form-row">
+            <label for="rank">Ranking:</label>
+            <select id="rank" name="rank">
                 <option value="default" {% if rank=='default' %}selected{% endif %}>Default (BM25)</option>
                 <option value="custom"  {% if rank=='custom'  %}selected{% endif %}>Custom (Fuzzy + Multi-field + Title Boost + wildcard)</option>
             </select>
-        </label>
-        <input type="submit" value="Search" />
+        </div>
+        <div class="form-row">
+            <input type="submit" value="Search" />
+        </div>
     </form>
 
     {% if error %}
@@ -63,27 +87,45 @@
     <p>{{ total_hits }} results found. Page {{ page }} of {{ total_pages }}.</p>
 
     {% if lucene_output %}
-        <ul>
-            {% for hit in lucene_output %}
-                <li class="result">
-                    <b>Title:</b> {{ hit.title }}<br>
-                    <b>Score:</b> {{ hit.score|round(3) }}<br>
-                    <b>Text:</b> {{ hit.text }}<br>
-                    {% if hit.url %}
-                        <b>URL:</b> <a href="{{ hit.url }}" target="_blank">{{ hit.url }}</a><br>
-                    {% endif %}
-                    {% if hit.author %}
-                        <b>Author:</b> {{ hit.author }}<br>
-                    {% endif %}
-                    {% if hit.id %}
-                        <b>ID:</b> {{ hit.id }}<br>
-                    {% endif %}
-                    {% if hit.created_utc %}
-                        <b>Date:</b> {{ hit.created_utc }}<br>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+        {% for hit in lucene_output %}
+            {% if hit.url %}
+                <a class="result-card" href="{{ hit.url }}" target="_blank">
+                    <div class="result-title"> Title: {{ hit.title }}</div>
+                    <div class="result-meta">
+                        {% if hit.author %}<span>by {{ hit.author }}</span>{% endif %}
+                        {% if hit.created_utc %}<span> | UTC: {{ hit.created_utc }}</span>{% endif %}
+                        {% if hit.id %}<span> | ID: {{ hit.id }}</span>{% endif %}
+                        <span> | Score: {{ hit.score|round(3) }}</span>
+                    </div>
+                    <div class="result-snippet">
+                        {% set words = hit.text.split() %}
+                        {% if words|length > 40 %}
+                            {{ words[:40]|join(' ') }}...
+                        {% else %}
+                            {{ hit.text }}
+                        {% endif %}
+                    </div>
+                </a>
+            {% else %}
+                <div class="result-card">
+                    <div class="result-title">{{ hit.title }}</div>
+                    <div class="result-meta">
+                        {% if hit.author %}<span>by {{ hit.author }}</span>{% endif %}
+                        {% if hit.created_utc %}<span> | UTC: {{ hit.created_utc }}</span>{% endif %}
+                        {% if hit.id %}<span> | ID: {{ hit.id }}</span>{% endif %}
+                        <span> | Score: {{ hit.score|round(3) }}</span>
+                    </div>
+                    <div class="result-snippet">
+                        {% set words = hit.text.split() %}
+                        {% if words|length > 40 %}
+                            {{ words[:40]|join(' ') }}...
+                        {% else %}
+                            {{ hit.text }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
     {% else %}
         {% if not error %}
             <p>No results found.</p>
@@ -118,7 +160,7 @@
             {% endif %}
             <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ total_pages }}">{{ total_pages }}</a>
         {% endif %}
-
+        <br>
         <br>
         {# Previous/Next #}
         {% if page > 1 %}

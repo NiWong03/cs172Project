@@ -8,44 +8,95 @@ from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.search import IndexSearcher
 from flask import request, Flask, render_template, redirect, url_for
+from org.apache.lucene.search import BooleanQuery, BooleanClause, TermQuery
+from org.apache.lucene.search import BoostQuery, FuzzyQuery, WildcardQuery
+from org.apache.lucene.index import Term
+from org.apache.lucene.queryparser.classic import QueryParser
+from org.apache.lucene.analysis.standard import StandardAnalyzer
 
 app = Flask(__name__)
+def retrieve(storedir, query, author='', docid='',
+             *, page=1, page_size=10, rank_mode='default'):
+    """
+    rank_mode = 'default'  ->  BM25, exact text match
+               = 'custom'   ->  fuzzy tokens OR-ed on title/text,
+                                title hits get boost 3.0
+    """
+    from org.apache.lucene.store import NIOFSDirectory
+    from java.nio.file import Paths
+    from org.apache.lucene.index import DirectoryReader, Term
+    from org.apache.lucene.search import (
+        IndexSearcher, BooleanQuery, BooleanClause,
+        TermQuery, FuzzyQuery, BoostQuery
+    )
+    from org.apache.lucene.queryparser.classic import QueryParser
+    from org.apache.lucene.analysis.standard import StandardAnalyzer
+    from datetime import datetime
 
-def retrieve(storedir, query, page=1, page_size=10):
     searchDir = NIOFSDirectory(Paths.get(storedir))
-    searcher = IndexSearcher(DirectoryReader.open(searchDir))
-    parser = QueryParser('text', StandardAnalyzer())
-    parsed_query = parser.parse(query)
-    # Get enough docs to know the total count
-    topDocs = searcher.search(parsed_query, page * page_size + 1000)  # Fetch a big enough window
+    searcher  = IndexSearcher(DirectoryReader.open(searchDir))
+
+    builder      = BooleanQuery.Builder()
+    should_cnt   = 0
+
+    # ───────────────────────────────────────── text part
+    if query:
+        if rank_mode == 'custom':
+            for tok in query.split():
+                # Fuzzy matches
+                builder.add(
+                    BoostQuery(FuzzyQuery(Term("title", tok), maxEdits=1), 3.0),
+                    BooleanClause.Occur.SHOULD)
+                builder.add(
+                    FuzzyQuery(Term("text", tok), maxEdits=1),
+                    BooleanClause.Occur.SHOULD)
+                # Wildcard matches (prefix match)
+                builder.add(
+                    BoostQuery(WildcardQuery(Term("title", tok + "*")), 3.0),
+                    BooleanClause.Occur.SHOULD)
+                builder.add(
+                    WildcardQuery(Term("text", tok + "*")),
+                    BooleanClause.Occur.SHOULD)
+                should_cnt += 4
+        else:
+            parser = QueryParser("text", StandardAnalyzer())
+            builder.add(parser.parse(query), BooleanClause.Occur.SHOULD)
+            should_cnt += 1
+    
+    if should_cnt > 0:
+        final_q = builder.build()
+    else:
+        # fallback to match-all if nothing is provided
+        final_q = QueryParser("text", StandardAnalyzer()).parse("*:*")
+
+    # ───────────────────────────────────────── search + paging
+    topDocs    = searcher.search(final_q, page * page_size + 1000)
     total_hits = topDocs.totalHits.value
-    scoreDocs = topDocs.scoreDocs
-    start = (page - 1) * page_size
-    end = start + page_size
+    scoreDocs  = topDocs.scoreDocs
+    start, end = (page-1)*page_size, (page-1)*page_size + page_size
+
     hits = []
     for hit in scoreDocs[start:end]:
         doc = searcher.doc(hit.doc)
-        # Convert created_utc timestamp to readable date string
-        created_raw = doc.get("created_utc")
-        if created_raw:
+        # prettify timestamp
+        raw = doc.get("created_utc")
+        if raw:
             try:
-                dt = datetime.utcfromtimestamp(float(created_raw))
-                created_str = dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+                raw = datetime.utcfromtimestamp(float(raw)).strftime('%Y-%m-%d %H:%M:%S UTC')
             except Exception:
-                created_str = created_raw  # fallback if parsing fails
-        else:
-            created_str = ""
+                pass
         hits.append({
-            "score": hit.score,
-            "text": doc.get("text"),
-            "title": doc.get("title"),
-            "author": doc.get("author"),
-            "id": doc.get("id"),
-            "created_utc": created_str,
-            "url": doc.get("url"),
+            "score"       : hit.score,
+            "title"       : doc.get("title"),
+            "text"        : doc.get("text"),
+            "author"      : doc.get("author"),
+            "id"          : doc.get("id"),
+            "created_utc" : raw or "",
+            "url"         : doc.get("url"),
             "num_comments": doc.get("num_comments")
         })
     return hits, total_hits
+
 
 @app.route("/")
 def home():
@@ -56,40 +107,71 @@ def input():
     return render_template('input.html')
 
 @app.route('/output', methods=['GET', 'POST'])
+@app.route('/output', methods=['GET', 'POST'])
+@app.route('/output', methods=['GET', 'POST'])
 def output():
-    query = ""
-    page = 1
-    results = []
-    error = None
-    page_size = 10
+    # ---------------------  defaults  ---------------------
+    query      = ""
+    author     = ""
+    docid      = ""
+    rank       = "default"     #  "default"  or  "fuzzy"
+    page       = 1
+    page_size  = 10
+
+    results    = []
+    error      = None
     total_hits = 0
 
+    # ---------------------  read form / args  --------------
     if request.method == 'POST':
-        query = request.form.get('query', '')
-    elif request.method == 'GET':
-        query = request.args.get('query', '')
-        page = int(request.args.get('page', '1'))
+        query  = request.form.get('query',  '')
+        author = request.form.get('author', '')
+        docid  = request.form.get('id',     '')
+        rank   = request.form.get('rank',   'default')
+    else:                                       # GET
+        query  = request.args.get('query',  '')
+        author = request.args.get('author', '')
+        docid  = request.args.get('id',     '')
+        rank   = request.args.get('rank',   'default')
+        page   = int(request.args.get('page',  '1'))
 
-    if query:
+    # ---------------------  run search  --------------------
+    if query or author or docid:               # at least one criterion
         try:
             lucene.getVMEnv().attachCurrentThread()
-            results, total_hits = retrieve('./index', query, page=page, page_size=page_size)
+
+            results, total_hits = retrieve(
+                './index',
+                query, author, docid,
+                page       = page,
+                page_size  = page_size,
+                rank_mode  = rank           # <── pass through
+            )
         except Exception as e:
             error = f"Error searching index: {e}"
     else:
-        error = "Empty query."
+        error = "Please enter a query, author, or id."
 
-    total_pages = (total_hits + page_size - 1) // page_size  # round up
+    total_pages = (total_hits + page_size - 1) // page_size
 
+    # ---------------------  render  ------------------------
     return render_template(
         'output.html',
-        lucene_output=results,
-        query=query,
-        error=error,
-        page=page,
-        page_size=page_size,
-        total_hits=total_hits,
-        total_pages=total_pages
+        # search results
+        lucene_output = results,
+        total_hits    = total_hits,
+
+        # search / paging state
+        query  = query,
+        author = author,
+        id     = docid,
+        rank   = rank,
+        page   = page,
+        page_size = page_size,
+        total_pages = total_pages,
+
+        # error (if any)
+        error = error
     )
 
 
