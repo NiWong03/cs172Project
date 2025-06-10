@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reddit-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+    <style>
+        body { font-family: sans-serif; max-width: 750px; margin: 2em auto; }
+        .result { margin-bottom: 1.5em; border-bottom: 1px solid #ccc; padding-bottom: 1em; }
+        .pagination { margin-top: 1.5em; }
+        .pagination a, .pagination strong {
+            margin: 0 3px; padding: 4px 9px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .pagination a { background: #f0f0f0; color: #0077cc; }
+        .pagination strong {
+            background: #0077cc; color: white; font-weight: bold;
+        }
+        .pagination span.ellipsis {
+            margin: 0 6px; color: #999;
+        }
+        .search-form {
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            gap: 0.7em 1em;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto 1.5em auto;
+            padding: 1em;
+            background: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #e2e2e2;
+        }
+        .form-row {
+            display: contents; /* allows grid to treat children as grid items */
+        }
+        .search-form label {
+            justify-self: end;
+            font-weight: bold;
+        }
+        .search-form input[type="text"],
+        .search-form select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .search-form input[type="submit"] {
+            grid-column: 1 / span 2;
+            justify-self: center;
+            margin-top: 0.5em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Results</h1>
+    
+    <!-- Search form (always at top) -->
+    <form class="search-form" action="{{ url_for('output') }}" method="get">
+        <div class="form-row">
+            <label for="query">Query:</label>
+            <input type="text" id="query" name="query" value="{{ query|default('') }}" autofocus />
+        </div>
+        <div class="form-row">
+            <label for="author">Author:</label>
+            <input type="text" id="author" name="author" value="{{ author|default('') }}" />
+        </div>
+        <div class="form-row">
+            <label for="id">ID:</label>
+            <input type="text" id="id" name="id" value="{{ id|default('') }}" />
+        </div>
+        <div class="form-row">
+            <label for="rank">Ranking:</label>
+            <select id="rank" name="rank">
+                <option value="default" {% if rank=='default' %}selected{% endif %}>Default (BM25)</option>
+                <option value="custom"  {% if rank=='custom'  %}selected{% endif %}>Custom (Fuzzy + Multi-field + Title Boost + wildcard)</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <input type="submit" value="Search" />
+        </div>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <p>{{ total_hits }} results found. Page {{ page }} of {{ total_pages }}.</p>
+
+    {% if lucene_output %}
+        {% for hit in lucene_output %}
+            {% if hit.url %}
+                <a class="result-card" href="{{ hit.url }}" target="_blank">
+                    <div class="result-title"> Title: {{ hit.title }}</div>
+                    <div class="result-meta">
+                        {% if hit.author %}<span>by {{ hit.author }}</span>{% endif %}
+                        {% if hit.created_utc %}<span> | UTC: {{ hit.created_utc }}</span>{% endif %}
+                        {% if hit.id %}<span> | ID: {{ hit.id }}</span>{% endif %}
+                        <span> | Score: {{ hit.score|round(3) }}</span>
+                    </div>
+                    <div class="result-snippet">
+                        {% set words = hit.text.split() %}
+                        {% if words|length > 40 %}
+                            {{ words[:40]|join(' ') }}...
+                        {% else %}
+                            {{ hit.text }}
+                        {% endif %}
+                    </div>
+                </a>
+            {% else %}
+                <div class="result-card">
+                    <div class="result-title">{{ hit.title }}</div>
+                    <div class="result-meta">
+                        {% if hit.author %}<span>by {{ hit.author }}</span>{% endif %}
+                        {% if hit.created_utc %}<span> | UTC: {{ hit.created_utc }}</span>{% endif %}
+                        {% if hit.id %}<span> | ID: {{ hit.id }}</span>{% endif %}
+                        <span> | Score: {{ hit.score|round(3) }}</span>
+                    </div>
+                    <div class="result-snippet">
+                        {% set words = hit.text.split() %}
+                        {% if words|length > 40 %}
+                            {{ words[:40]|join(' ') }}...
+                        {% else %}
+                            {{ hit.text }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% if not error %}
+            <p>No results found.</p>
+        {% endif %}
+    {% endif %}
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {# Page window: show up to 5 pages around current page #}
+        {% set window = 2 %}
+        {% set start_page = page - window if page - window > 1 else 1 %}
+        {% set end_page = page + window if page + window < total_pages else total_pages %}
+        {# Always show first page #}
+        {% if start_page > 1 %}
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page=1">1</a>
+            {% if start_page > 2 %}
+                <span class="ellipsis">…</span>
+            {% endif %}
+        {% endif %}
+        {# Main page links #}
+        {% for p in range(start_page, end_page+1) %}
+            {% if p == page %}
+                <strong>{{ p }}</strong>
+            {% else %}
+                <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ p }}">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+        {# Always show last page #}
+        {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+                <span class="ellipsis">…</span>
+            {% endif %}
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ total_pages }}">{{ total_pages }}</a>
+        {% endif %}
+        <br>
+        <br>
+        {# Previous/Next #}
+        {% if page > 1 %}
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ page-1 }}">&#8592; Previous</a>
+        {% endif %}
+        {% if page < total_pages %}
+            <a href="{{ url_for('output') }}?query={{ query }}&author={{ author }}&id={{ id }}&rank={{ rank }}&page={{ page+1 }}">Next &#8594;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <p><a href="{{ url_for('input') }}">Back to Simple Search</a></p>
+</body>
+</html>
